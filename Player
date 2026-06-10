@@ -5,17 +5,60 @@ public partial class Player : CharacterBody2D
 {
 	private AnimatedSprite2D _anim;
 	
-	public const float Speed = 70.0f;
-	public const float JumpVelocity = -250.0f;
+	//nodes da lingua
+	private RayCast2D _tongueRay;
+	private Line2D _tongueBody;
+	private Sprite2D _tongueTip;
+	
+	public const float Speed = 80.0f;
+	public const float JumpVelocity = -400.0f;
+	
+	//variaveis de movimento e alcance da lingua
+	public const float TongueReach = 200.0f;
+	public const float GrappleSpeed = 300.0f;
+	private bool _isGrappling = false;
+	private Vector2 _grapplePoint = Vector2.Zero;
+	
 	
 	public override void _Ready(){
 		_anim = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
+		_tongueRay = GetNode<RayCast2D>("TongueRay");
+		_tongueBody = GetNode<Line2D>("TongueBody");
+		_tongueTip = GetNode<Sprite2D>("TongueTip");
+		
+		// esconde a lingua no começo
+		_tongueBody.Hide();
+		_tongueTip.Hide();
 	}
 	
 	public override void _PhysicsProcess(double delta){
 		
 		//permite modificar X e Y
 		Vector2 velocity = Velocity;
+		
+		// se botão esqueedo do mouse for pressiondo, "atira" a lingua
+		if (Input.IsActionJustPressed("shoot_tongue")){
+			ShootTongue();
+		}
+		
+		// logica de quando esta grudado na parede
+		if (_isGrappling){
+			
+			Vector2 grappleDirection = (_grapplePoint - GlobalPosition).Normalized();
+			velocity = grappleDirection * GrappleSpeed;
+			
+			// desenha o corpo da lingua
+			_tongueBody.SetPointPosition(0, Vector2.Zero);
+			_tongueBody.SetPointPosition(1, ToLocal(_grapplePoint));
+			
+			// ponta da lingua
+			_tongueTip.Position = ToLocal(_grapplePoint);
+			
+			// solta lingua quando estiver perto de um alvo ou soltar o botao do mouse
+			if (GlobalPosition.DistanceTo(_grapplePoint) < 15.0f || Input.IsActionJustReleased("shoot_tongue")){
+				StopGrappling();
+			}
+		}
 		
 		// adiciona gravidade
 		if (!IsOnFloor())
@@ -57,5 +100,37 @@ public partial class Player : CharacterBody2D
 		
 		Velocity = velocity;
 		MoveAndSlide();
+	}
+	
+	private void ShootTongue(){
+		Vector2 mousePos = GetGlobalMousePosition();
+		float angleToMouse = GetLocalMousePosition().Angle();
+		
+		//aponta o raio/tongueRay para o mouse
+		_tongueRay.TargetPosition = ToLocal(mousePos).Normalized() * TongueReach;
+		_tongueRay.ForceRaycastUpdate();
+		
+		//caso o raio bata em algo solido
+		if (_tongueRay.IsColliding()){
+			
+			_grapplePoint = _tongueRay.GetCollisionPoint();
+			_isGrappling = true;
+			
+			// faz o corpo da lingua aparecer
+			_tongueBody.ClearPoints();
+			_tongueBody.AddPoint(Vector2.Zero);
+			_tongueBody.AddPoint(ToLocal(_grapplePoint));
+			_tongueBody.Show();
+			
+			// faz a ponta da lingua aparecer e girar na direcaao certa
+			_tongueTip.Position = ToLocal(_grapplePoint);
+			_tongueTip.Rotation = angleToMouse;
+			_tongueTip.Show();
+		}
+	}
+	private void StopGrappling(){
+			_isGrappling = false;
+			_tongueBody.Hide();
+			_tongueTip.Hide();
 	}
 }
