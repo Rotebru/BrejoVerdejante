@@ -51,6 +51,23 @@ public partial class Player : CharacterBody2D
 			_tongueBody.SetPointPosition(0, Vector2.Zero);
 			_tongueBody.SetPointPosition(1, ToLocal(_grapplePoint));
 			
+			//animacao da boca deixei como comentario porque não tem sprite ainda
+			//_anim.FlipH = grappleDirection.X < 0;
+			
+			//deixa os valores positivos
+			float absX = Mathf.Abs(grappleDirection.X);
+			float absY = Mathf.Abs(grappleDirection.Y);
+			/* deixei como comentario porque não tem sprite ainda
+			if (absX > 0.85f){
+				_anim.Play("shoot_h");
+			}
+			else if (absY > 0.85f) {
+				_anim.Play("shoot_v");
+			}
+			else {
+				_anim.Play("shoot_d");
+			}
+			*/
 			// ponta da lingua
 			_tongueTip.Position = ToLocal(_grapplePoint);
 			
